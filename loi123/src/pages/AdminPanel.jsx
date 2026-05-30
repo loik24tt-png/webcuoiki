@@ -33,19 +33,32 @@ export default function AdminPanel() {
   // Fetch users list
   const fetchUsers = async () => {
     try {
-      // Mock - trong thực tế cần tạo API endpoint lấy danh sách users
       const token = localStorage.getItem("football_token");
+      if (!token) {
+        setMsg("❌ Token không tồn tại. Vui lòng đăng nhập lại");
+        setMsgType("error");
+        navigate("/dangnhap");
+        return;
+      }
+
       const res = await fetch(API + "/users", {
         headers: {
           "Authorization": `Bearer ${token}`
         }
       });
-      if (res.ok) {
-        const data = await res.json();
-        setUsers(data);
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Lỗi tải danh sách user");
       }
+
+      const data = await res.json();
+      setUsers(data);
+      setMsg("");
     } catch (err) {
       console.error("Lỗi tải danh sách user:", err);
+      setMsg("❌ " + err.message);
+      setMsgType("error");
     } finally {
       setLoading(false);
     }
@@ -127,11 +140,17 @@ export default function AdminPanel() {
         }
       });
 
-      if (!res.ok) throw new Error("Lỗi xóa tài khoản");
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Lỗi xóa tài khoản");
+      }
 
       setMsgType("success");
       setMsg("✅ Xóa tài khoản thành công");
-      fetchUsers();
+      setTimeout(() => {
+        fetchUsers();
+      }, 500);
 
     } catch (err) {
       console.error(err);
